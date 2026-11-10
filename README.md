@@ -40,14 +40,14 @@ The flow walks through **8 sequential steps** of a real Rook workflow run agains
 ```bash
 git clone https://github.com/Inderjeet0007/rook-cli-tour
 cd rook-cli-tour
-open index.html          # macOS
+open rookTerminalTour.html          # macOS
 # or
-start index.html         # Windows
+start rookTerminalTour.html         # Windows
 # or serve it
 python3 -m http.server 8000
 ```
 
-No build step, no dependencies. Everything is inline in `index.html`.
+No build step, no dependencies. Everything is inline in `rookTerminalTour.html`.
 
 ### Walkthrough controls
 
@@ -66,7 +66,7 @@ No build step, no dependencies. Everything is inline in `index.html`.
 
 ```
 rook-cli-tour/
-├── index.html      # The entire flow — HTML, CSS, and JS in one file
+├── rookTerminalTour.html      # The entire flow — HTML, CSS, and JS in one file
 └── README.md       # This file
 ```
 
@@ -79,7 +79,7 @@ The walkthrough is intentionally a single file so it can be:
 
 ## Customising for your agent
 
-The step content lives in the `STEPS` array near the top of the `<script>` block in `index.html`. Each step is a label and an array of line descriptors. To adapt the walkthrough for a different agent:
+The step content lives in the `STEPS` array near the top of the `<script>` block in `rookTerminalTour.html`. Each step is a label and an array of line descriptors. To adapt the walkthrough for a different agent:
 
 1. Update the agent name, project ID, and feature counts in steps 2–6
 2. Replace the `/explore` and `/profile` output with your agent's actual responses
