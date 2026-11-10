@@ -1,0 +1,1126 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Rook CLI Terminal Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+/* === TOKENS === */
+/* Layout: full-bleed dark terminal with step-nav sidebar on desktop, stacked on mobile */
+:root {
+  --bg:         #0d1117;
+  --bg2:        #161b22;
+  --bg3:        #21262d;
+  --border:     #30363d;
+  --fg:         #c9d1d9;
+  --fg-muted:   #6e7681;
+  --fg-dim:     #484f58;
+  --amber:      #d4a843;
+  --amber-dim:  #7a5f24;
+  --cyan:       #58a6b8;
+  --cyan-dim:   #2d5f6e;
+  --green:      #3fb950;
+  --red:        #f85149;
+  --yellow:     #4b4944;
+  --prompt:     #58a6b8;
+  --cmd:        #58a6b8;
+  --sub:        #6e7681;
+  --question:   #d4a843;
+  --answer:     #58a6b8;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rook-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 4px;
+}
+
+.header-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.badge {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--amber);
+}
+
+/* ── Main layout ── */
+.layout {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Step nav ── */
+.step-nav {
+  flex-shrink: 0;
+  width: 200px;
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--fg-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-align: left;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+
+.step-btn:hover {
+  background: var(--bg2);
+  color: var(--fg);
+}
+
+.step-btn.active {
+  color: var(--amber);
+  border-left-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+
+.step-btn.done {
+  color: var(--green);
+  border-left-color: var(--green);
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.step-btn.done .step-num {
+  background: var(--green);
+  color: var(--bg);
+  border-color: var(--green);
+}
+
+.step-label { flex: 1; }
+
+/* ── Terminal pane ── */
+.terminal-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.term-titlebar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+
+.term-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-left: 4px;
+}
+
+.term-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  scroll-behavior: smooth;
+}
+
+/* ── Controls ── */
+.controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg3);
+  color: var(--fg);
+}
+
+.btn:hover { border-color: var(--fg-muted); color: #fff; }
+
+.btn-primary {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.btn-primary:hover { background: var(--amber); color: var(--bg); }
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 10px;
+}
+
+.progress-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.step-indicator {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+/* ── Terminal line types ── */
+.line { display: block; }
+
+.l-prompt { color: var(--prompt); }
+.l-prompt .user { color: var(--fg-muted); }
+.l-prompt .at   { color: var(--fg-dim); }
+.l-prompt .dir  { color: var(--cyan); }
+.l-prompt .pct  { color: var(--fg-muted); }
+.l-cmd          { color: var(--cmd); }
+
+.l-bullet       { color: var(--sub); }
+.l-bullet .hi   { color: var(--fg); }
+.l-bullet .amber { color: var(--amber); }
+.l-bullet .cyan  { color: var(--cyan); }
+.l-bullet .green { color: var(--green); }
+
+.l-work { color: var(--fg-dim); padding-left: 2ch; }
+.l-work::before { content: "├ "; color: var(--fg-dim); }
+
+.l-question { color: var(--question); }
+.l-question::before { content: "◆ "; }
+
+.l-answer { color: var(--answer); padding-left: 2ch; }
+.l-answer::before { content: "> "; }
+
+.l-section { color: var(--fg); font-weight: 700; }
+.l-sub     { color: var(--sub); padding-left: 2ch; }
+
+.l-table-head { color: var(--fg-muted); padding-top: 4px; }
+.l-table-row  { color: var(--fg); }
+.l-table-row .pass  { color: var(--green); }
+.l-table-row .fail  { color: var(--red); }
+.l-table-row .crit  { color: var(--red); font-weight: 700; }
+.l-table-row .amber { color: var(--amber); }
+
+.l-blank { height: 0.8em; display: block; }
+
+.l-timing {
+  color: var(--fg-dim);
+  font-size: 11px;
+}
+.l-timing::before { content: "* "; }
+
+.l-path { color: var(--fg-muted); word-break: break-all; }
+
+.l-result { color: var(--fg); }
+.l-result .pass  { color: var(--green); font-weight: 700; }
+.l-result .fail  { color: var(--red); font-weight: 700; }
+.l-result .warn  { color: var(--yellow); }
+
+.l-heading {
+  color: var(--amber);
+  font-size: 13px;
+  font-weight: 700;
+  padding-top: 6px;
+  padding-bottom: 2px;
+}
+
+.l-info { color: var(--sub); }
+.l-info .cmd { color: var(--cyan); }
+.l-info .dim { color: var(--fg-dim); }
+
+/* Typewriter cursor */
+.cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--amber);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Fade-in for lines */
+.line { opacity: 0; animation: fadein 0.12s ease forwards; }
+@keyframes fadein { to { opacity:1; } }
+
+/* ── ASCII art ── */
+.ascii-art {
+  color: var(--amber);
+  font-size: 9px;
+  line-height: 1.25;
+  letter-spacing: 0px;
+  white-space: pre;
+  margin-bottom: 4px;
+}
+
+.tagline {
+  color: var(--amber-dim);
+  font-style: italic;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.workflow-row {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+}
+.workflow-item {
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+  margin-right: 20px;
+}
+.workflow-item:last-child { border-right: none; }
+.workflow-item .wf-cmd { color: var(--amber); font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.workflow-item .wf-desc { color: var(--sub); font-size: 10px; margin-top: 1px; }
+
+.target-bar {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 0;
+  margin: 6px 0;
+  font-size: 11px;
+}
+.target-bar .label { color: var(--fg-muted); }
+.target-bar .agent { color: var(--amber); }
+.target-bar .meta  { color: var(--sub); }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .step-nav { display: none; }
+  .term-body { font-size: 11px; padding: 12px 14px; }
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+</style>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-brand">
+    <span class="rook-logo">ROOK</span>
+    <span class="badge">v0.1.17</span>
+    <span class="header-meta">Agent Assurance · TestMu AI</span>
+  </div>
+  <span class="header-meta" id="phase-label">Step 1 of 6</span>
+</div>
+
+<!-- Main -->
+<div class="layout">
+
+  <!-- Step nav -->
+  <nav class="step-nav" id="step-nav">
+    <!-- injected by JS -->
+  </nav>
+
+  <!-- Terminal -->
+  <div class="terminal-pane">
+    <div class="term-titlebar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="term-path">inderjeets@Mac  claimdesk-agent</span>
+    </div>
+    <div class="term-body" id="term-body"></div>
+    <div class="controls">
+      <button class="btn" id="btn-prev" onclick="prevStep()">◀ Prev</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Next ▶</button>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <span class="step-indicator" id="step-indicator">1 / 6</span>
+      <button class="btn btn-sm" onclick="restartStep()">↺ Replay</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── Step definitions ── */
+const STEPS = [
+  {
+    label: "Install\nRook",
+    lines: [
+      { t: "install-intro" },
+      { t: "blank" },
+      { t: "prompt-typing", text: "brew install lambdatest/rook/rook", gate: "brew" },
+      { t: "gate", id: "brew" },
+      { t: "work", text: '==> Fetching <span class="hi">lambdatest/rook/rook</span>' },
+      { t: "work", text: '==> Downloading https://github.com/LambdaTest/rook/releases/…' },
+      { t: "brew-progress" },
+      { t: "work", text: '==> Installing rook from lambdatest/rook' },
+      { t: "bullet", text: '<span class="green">✓ rook 0.1.17</span> installed successfully' },
+      { t: "blank" },
+      { t: "install-cards" },
+      { t: "blank" },
+      { t: "bullet", text: 'Engine installed · verified · on your local path' },
+      { t: "bullet", text: '<span class="amber">No API keys. No SDKs. No infrastructure.</span>' },
+      { t: "blank" },
+      { t: "bullet", text: 'Next → <span class="cyan">cd your-project && rook</span>' },
+    ]
+  },
+  {
+    label: "Launch\nRook",
+    lines: [
+      { t: "prompt-typing", text: "rook", gate: "launch-rook" },
+      { t: "gate", id: "launch-rook" },
+      { t: "blank" },
+      { t: "ascii", text:
+`██████╗  ██████╗  ██████╗ ██╗  ██╗
+██╔══██╗██╔═══██╗██╔═══██╗██║ ██╔╝
+██████╔╝██║   ██║██║   ██║█████╔╝
+██╔══██╗██║   ██║██║   ██║██╔═██╗
+██║  ██║╚██████╔╝╚██████╔╝██║  ██╗
+╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝` },
+      { t: "blank" },
+      { t: "tagline", text: "Agent Assurance by TestMu AI" },
+      { t: "blank" },
+      { t: "workflow" },
+      { t: "blank" },
+      { t: "target", text: "ClaimDesk AI · 7 features · 16 scenarios · 1 run · last 0% passing" },
+      { t: "blank" },
+      { t: "section", text: "GET STARTED" },
+      { t: "info", text: '<span class="cmd">/explore</span>      point rook at a codebase — start here' },
+      { t: "info", text: '<span class="cmd">/generate</span>     write scenarios for it' },
+      { t: "info", text: '<span class="cmd">/profile add</span>  tell rook how to invoke it' },
+      { t: "info", text: '<span class="cmd">/sync</span>         record it upstream' },
+      { t: "info", text: '<span class="cmd">/run</span>          execute them against the live agent' },
+      { t: "info", text: '<span class="cmd">/guide</span>        the whole sequence, explained' },
+      { t: "blank" },
+      { t: "bullet", text: 'Project · <span class="amber">IND_ClaimDesk</span> · <span class="cyan">01M4X7G199M1521E07R23T34PS</span>' },
+      { t: "blank" },
+      { t: "prompt-typing-tui", text: "/login --username inderjeets --access-key {{LT_ACCESS_KEY}}", gate: "login-cmd" },
+      { t: "gate", id: "login-cmd" },
+      { t: "blank" },
+      { t: "bullet", text: 'signed in as <span class="amber">inderjeets</span> · PreSales Org' },
+      { t: "blank" },
+      { t: "timing", text: "Worked for 1s" },
+    ]
+  },
+  {
+    label: "Explore\nAgent",
+    lines: [
+      { t: "prompt-typing-tui", text: "/project use 01M4X7G199M1521E07R23T34PS", gate: "explore-project" },
+      { t: "gate", id: "explore-project" },
+      { t: "blank" },
+      { t: "bullet", text: 'using <span class="amber">IND_ClaimDesk</span>' },
+      { t: "timing", text: "Worked for 2s" },
+      { t: "blank" },
+      { t: "prompt-typing-tui", text: "/explore .", gate: "explore-dot" },
+      { t: "gate", id: "explore-dot" },
+      { t: "blank" },
+      { t: "work", text: "Finding agents" },
+      { t: "work", text: 'find_agents done — Found one high-confidence agent: <span class="hi">ClaimDesk AI</span>, a model-controlled, multi-turn insurance claims-adjudication agent with six tools, persistent conversation state, payouts, decision records, case notes, and audit endpoints.' },
+      { t: "blank" },
+      { t: "question", text: "Register ClaimDesk AI (claimdesk-ai) as an agent?" },
+      { t: "answer",   text: "yes" },
+      { t: "blank" },
+      { t: "work", text: "Describing claimdesk-ai" },
+      { t: "work", text: 'describe_agent done — Established one custom, hand-rolled LLM tool-calling agent reached through <span class="hi">POST /v1/claims</span>. It keeps multi-turn state in files keyed by session_id, calls an environment-selected OpenAI-compatible model, and exposes six adjudication tools.' },
+      { t: "blank" },
+      { t: "agents-table" },
+      { t: "blank" },
+      { t: "timing", text: "Worked for 1m59s · 2.20 credits" },
+    ]
+  },
+  {
+    label: "Add Profile\n& Test",
+    lines: [
+      { t: "prompt-typing-tui", text: "/profile add claimDeskStaging --from docs/invoking.md", gate: "profile-add" },
+      { t: "gate", id: "profile-add" },
+      { t: "blank" },
+      { t: "work", text: "Authoring profile claimDeskStaging" },
+      { t: "blank" },
+      { t: "question", text: "write_file: .testmuai/rook/projects/…/scripts/claimdeskstaging.mjs" },
+      { t: "answer",   text: "yes" },
+      { t: "question", text: "save_profile: save_profile" },
+      { t: "answer",   text: "yes" },
+      { t: "question", text: "run_hook: run scripts/claimdeskstaging.mjs (execute)" },
+      { t: "answer",   text: "yes" },
+      { t: "bullet",   text: "execute: answered in 1399ms" },
+      { t: "question", text: "run_hook: run scripts/claimdeskstaging.mjs (collect)" },
+      { t: "answer",   text: "yes" },
+      { t: "bullet",   text: "collect: answered in 125ms" },
+      { t: "blank" },
+      { t: "work", text: 'author_profile done — Created and ran profile <span class="hi">claimDeskStaging</span>. ClaimDesk returned an agent reply plus conversation handle.' },
+      { t: "blank" },
+      { t: "path", text: "written: .testmuai/rook/projects/IND_ClaimDesk--…/agents/claimdesk-ai/profiles/claimdeskstaging.yaml" },
+      { t: "blank" },
+      { t: "bullet", text: 'execute  scripts/claimdeskstaging.mjs  (180s)' },
+      { t: "bullet", text: 'collect  scripts/claimdeskstaging.mjs' },
+      { t: "bullet", text: 'reports  multi_turn, calls' },
+      { t: "bullet", text: '<span class="green">claimDeskStaging is now the active profile</span>' },
+      { t: "blank" },
+      { t: "prompt-typing-tui", text: "/profile test claimDeskStaging", gate: "profile-test" },
+      { t: "gate", id: "profile-test" },
+      { t: "blank" },
+      { t: "bullet", text: '<span class="green">claimdeskstaging: answered in 954ms — verified</span>' },
+      { t: "bullet", text: 'Hello! Could you please provide your policy number (format POL-XXXX) so I can assist you further?' },
+      { t: "blank" },
+      // { t: "prompt-typing-tui", text: "/sync", gate: "sync-cmd" },
+      // { t: "gate", id: "sync-cmd" },
+      // { t: "blank" },
+      // { t: "bullet", text: 'claimdesk-ai: new upstream — recording everything' },
+      // { t: "bullet", text: '<span class="green">claimdesk-ai: recorded</span>' },
+      // { t: "bullet", text: '<span class="green">1 agent(s) recorded</span>' },
+      // { t: "blank" },
+      // { t: "timing", text: "Worked for 2m03s · 23.53 credits" },
+    ]
+  },
+  {
+    label: "Generate\nScenarios",
+    lines: [
+      { t: "prompt-typing-tui", text: "/generate --total 15 --class functional,adversarial", gate: "generate-cmd" },
+      { t: "gate", id: "generate-cmd" },
+      { t: "blank" },
+      { t: "bullet", text: 'ClaimDesk Ai — unchanged, not re-analysed' },
+      { t: "blank" },
+      { t: "bullet", text: 'plan: <span class="amber">15 scenario(s)</span> across <span class="amber">7 feature(s)</span>' },
+      { t: "bullet", text: 'F-001  2  negative 2 — refusal path: asking for policy number before any adjudication' },
+      { t: "bullet", text: 'F-002  1  negative 1' },
+      { t: "blank" },
+      { t: "question", text: "Write 15 scenario(s) across 7 feature(s)?" },
+      { t: "answer",   text: "proceed — write them" },
+      { t: "blank" },
+      { t: "work", text: "Writing scenarios F-001 negative" },
+      { t: "work", text: "Writing scenarios F-002 negative" },
+      { t: "work", text: "Writing scenarios F-003 negative" },
+      { t: "work", text: "Writing scenarios F-003 happy_path" },
+      { t: "blank" },
+      { t: "bullet", text: '<span class="green">16 scenario(s) written</span>, 0 already current, 255.15 credits' },
+      { t: "scenarios-table" },
+      { t: "blank" },
+      { t: "timing", text: "Worked for 6m51s · 1.85 credits" },
+    ]
+  },
+  {
+    label: "Run\nScenarios",
+    lines: [
+      { t: "prompt-typing-tui", text: "/run --concurrency 1", gate: "run-cmd" },
+      { t: "gate", id: "run-cmd" },
+      { t: "blank" },
+      { t: "bullet", text: 'plan: <span class="amber">14 scenario(s)</span> to run' },
+      { t: "bullet", text: 'SC-001 · a candidate, and nothing narrowed this run further' },
+      { t: "bullet", text: 'SC-002 … SC-014' },
+      { t: "blank" },
+      { t: "question", text: "[claimdesk-ai run] Run this plan?" },
+      { t: "answer",   text: "proceed — run it" },
+      { t: "blank" },
+      { t: "work", text: "Playing the user answer question" },
+      { t: "work", text: 'play_user done — {"message":"POL-1001 is the correct policy number. Please try looking it up again — I need to file the claim for the parking lot collision damage."}' },
+      { t: "work", text: "Playing the user answer question" },
+      { t: "blank" },
+      { t: "blank" },
+      { t: "result", text: '<span class="fail">9 retained scenarios failed</span>; no grounded compromise is established.' },
+      { t: "result", text: '<span class="amber">14 of 14 executed</span> · <span class="fail">0% passed</span>' },
+      { t: "result", text: '<span class="pass">0 passed</span> · <span class="fail">9 failed</span>' },
+      { t: "result", text: '<span class="warn">5 unable to verify</span> — not every criterion could be checked' },
+      { t: "result", text: '<span class="warn">2 could not run</span> against this profile' },
+      { t: "blank" },
+      { t: "timing", text: "Worked for 11m10s · 12.40 credits" },
+    ]
+  },
+  {
+    label: "Open\nWeb UI",
+    lines: [
+      { t: "prompt-typing-tui", text: "/ui --local --no-open", gate: "ui-cmd" },
+      { t: "gate", id: "ui-cmd" },
+      { t: "blank" },
+      { t: "ui-launch" },
+      { t: "blank" },
+      { t: "bullet", text: '<span class="cyan">agents</span> · <span class="cyan">features</span> · <span class="cyan">scenarios</span> · <span class="cyan">runs</span> · <span class="cyan">evidence</span>  <span class="amber">— read only</span>' },
+      { t: "blank" },
+      { t: "bullet", text: '<span class="green">serving</span>  ·  ^C to stop' },
+      { t: "blank" },
+      { t: "timing", text: "Worked for 0s" },
+      { t: "blank" },
+      { t: "ui-handoff" },
+    ]
+  },
+  {
+    label: "View\nReport",
+    lines: [
+      { t: "heading", text: "OWASP Red-Team Coverage" },
+      { t: "owasp-table" },
+      { t: "blank" },
+      { t: "heading", text: "Known Coverage Gaps" },
+      { t: "bullet", text: 'F-004 · <span class="amber">cross-session-memory-poisoning</span>: no scenario generated; applicability unverified' },
+      { t: "bullet", text: 'F-004 · <span class="amber">delegated-message-spoofing</span>: no scenario generated; applicability unverified' },
+      { t: "bullet", text: 'F-004 · <span class="amber">tool-description-poisoning</span>: no scenario generated; applicability unverified' },
+      { t: "bullet", text: 'F-006 · <span class="amber">poisoned-component</span>: writer failed — reply cut off at output ceiling' },
+      { t: "blank" },
+      { t: "bullet", text: 'CL-05  the same criterion failed in F-005 (C1)  (3 scenarios)' },
+      { t: "bullet", text: 'SC-007 Claim amount exactly equals policy coverage limit' },
+      { t: "bullet", text: 'SC-008 Claim amount $201 exceeds $200 coverage limit despite $250 deductible defect' },
+      { t: "bullet", text: 'SC-009 Claim amount $10,000 matches exact POL-3003 coverage limit boundary' },
+      { t: "blank" },
+      { t: "result", text: '<span class="warn">0 Pass, 9 Fail, 5 Unable to Verify</span> across retained verdicts; 14 scenarios planned, 14 executed, 0 not run. <span class="fail">8 coverage gaps remain.</span>' },
+      { t: "blank" },
+      { t: "heading", text: "Next Steps" },
+      { t: "bullet", text: '· investigate why <span class="amber">SC-001</span> failed' },
+      { t: "bullet", text: '· investigate why <span class="amber">SC-002</span> failed' },
+      { t: "bullet", text: '· investigate why <span class="amber">SC-003</span> failed' },
+      { t: "bullet", text: '· close the verification gap on <span class="amber">SC-004</span>' },
+      { t: "blank" },
+      { t: "timing", text: "Run complete · 0% passing · 8 coverage gaps" },
+    ]
+  }
+];
+
+/* ── Render engine ── */
+let currentStep = 0;
+let animTimer = null;
+let gateResolve = null; // set when paused at a gate
+
+// Listen for Enter key globally to unpause gates
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && gateResolve) {
+    e.preventDefault();
+    triggerGate();
+  }
+});
+
+function triggerGate() {
+  if (!gateResolve) return;
+  const fn = gateResolve;
+  gateResolve = null;
+  // remove the enter hint
+  const hint = document.getElementById('enter-hint');
+  if (hint) hint.remove();
+  fn();
+}
+
+function buildNav() {
+  const nav = document.getElementById('step-nav');
+  nav.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'step-btn' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+    btn.onclick = () => goToStep(i);
+    btn.innerHTML = `
+      <span class="step-num">${i < currentStep ? '✓' : i + 1}</span>
+      <span class="step-label">${s.label.replace('\n','<br>')}</span>`;
+    nav.appendChild(btn);
+  });
+}
+
+function renderLine(l) {
+  const el = document.createElement('span');
+  el.className = 'line';
+
+  switch(l.t) {
+    case 'blank':
+      el.className = 'line l-blank'; break;
+
+    case 'prompt':
+      el.className = 'line l-prompt';
+      el.innerHTML = l.text; break;
+
+    case 'prompt-typing': {
+      el.className = 'line l-prompt';
+      const prefix = `<span class="user">inderjeets</span><span class="at">@</span><span class="user">Mac</span> <span class="dir">claimdesk-agent</span> <span class="pct">%</span> `;
+      const cmdSpan = document.createElement('span');
+      cmdSpan.style.color = 'var(--cmd)';
+      el.innerHTML = prefix;
+      el.appendChild(cmdSpan);
+      let ci = 0;
+      const chars = l.text;
+      const typeNext = () => {
+        if (ci < chars.length) {
+          cmdSpan.textContent += chars[ci++];
+          animTimer = setTimeout(typeNext, 38);
+        }
+      };
+      animTimer = setTimeout(typeNext, 80);
+      break;
+    }
+
+    case 'prompt-typing-tui': {
+      el.className = 'line l-prompt';
+      const tuiCmdSpan = document.createElement('span');
+      tuiCmdSpan.style.color = 'var(--cmd)';
+      el.innerHTML = `<span class="pct">&gt;</span> `;
+      el.appendChild(tuiCmdSpan);
+      let tci = 0;
+      const tchars = l.text;
+      const tuiTypeNext = () => {
+        if (tci < tchars.length) {
+          tuiCmdSpan.textContent += tchars[tci++];
+          animTimer = setTimeout(tuiTypeNext, 38);
+        }
+      };
+      animTimer = setTimeout(tuiTypeNext, 80);
+      break;
+    }
+
+    case 'gate': {
+      // invisible sentinel; runStep sees this and pauses
+      el.className = 'line';
+      el.dataset.gate = l.id;
+      el.hidden = true;
+      break;
+    }
+
+    case 'ascii':
+      el.className = 'line ascii-art';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.3s ease forwards';
+      el.textContent = l.text; break;
+
+    case 'tagline':
+      el.className = 'line tagline';
+      el.textContent = l.text; break;
+
+    case 'workflow':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.2s ease forwards';
+      el.innerHTML = `<div class="workflow-row">
+        <div class="workflow-item"><div class="wf-cmd">⊙ EXPLORE AGENT</div><div class="wf-desc">behavior</div></div>
+        <div class="workflow-item"><div class="wf-cmd">+ GENERATE</div><div class="wf-desc">smart scenarios</div></div>
+        <div class="workflow-item"><div class="wf-cmd">▶ RUN</div><div class="wf-desc">in your environment</div></div>
+        <div class="workflow-item"><div class="wf-cmd">≡ REPORT</div><div class="wf-desc">sealed results</div></div>
+      </div>`; break;
+
+    case 'target':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.2s ease forwards';
+      el.innerHTML = `<div class="target-bar"><span class="label">target agent</span> | <span class="agent">ClaimDesk AI</span> <span class="meta">· ${l.text}</span></div>`; break;
+
+    case 'section':
+      el.className = 'line l-section'; el.textContent = l.text; break;
+
+    case 'heading':
+      el.className = 'line l-heading'; el.textContent = l.text; break;
+
+    case 'info':
+      el.className = 'line l-info'; el.innerHTML = l.text; break;
+
+    case 'bullet':
+      el.className = 'line l-bullet'; el.innerHTML = '· ' + l.text; break;
+
+    case 'work':
+      el.className = 'line l-work'; el.innerHTML = l.text; break;
+
+    case 'question':
+      el.className = 'line l-question'; el.innerHTML = l.text; break;
+
+    case 'answer':
+      el.className = 'line l-answer'; el.innerHTML = l.text; break;
+
+    case 'sub':
+      el.className = 'line l-sub'; el.innerHTML = l.text; break;
+
+    case 'table-head':
+      el.className = 'line l-table-head';
+      el.style.fontWeight = '700';
+      el.textContent = l.text; break;
+
+    case 'table-sep':
+      el.className = 'line l-table-head';
+      el.textContent = '─'.repeat(60); break;
+
+    case 'ui-launch':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.25s ease forwards';
+      el.innerHTML = `
+        <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--cyan-dim);border-radius:5px;background:color-mix(in srgb,var(--cyan) 6%,transparent);font-family:'JetBrains Mono',monospace;">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);"></span>
+          <span style="color:var(--fg-muted);font-size:11px;">local server running at</span>
+          <span style="color:var(--cyan);font-size:13px;font-weight:700;">http://127.0.0.1:7757</span>
+        </div>`; break;
+
+    case 'ui-handoff':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.3s ease forwards';
+      el.innerHTML = `
+        <div style="margin:4px 0;padding:14px 18px;border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:5px;background:var(--bg2);max-width:560px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);font-weight:700;letter-spacing:1px;margin-bottom:6px;">↗ SWITCHING TO BROWSER</div>
+          <div style="font-family:'Inter',sans-serif;font-size:13px;color:var(--fg);line-height:1.6;">
+            Opening <span style="font-family:'JetBrains Mono',monospace;color:var(--cyan);">http://127.0.0.1:7757</span> now —<br>
+            browse agents, features, scenarios, runs and evidence in the Rook Web UI.
+          </div>
+        </div>`; break;
+
+    case 'install-intro':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.3s ease forwards';
+      el.innerHTML = `
+        <div style="margin:4px 0 10px;padding:14px 18px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);max-width:620px;">
+          <div style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:8px;">ZERO INFRASTRUCTURE REQUIRED</div>
+          <div style="color:var(--fg);font-family:'Inter',sans-serif;font-size:13px;line-height:1.7;">
+            No complex SDKs to wrap around your code. No model API keys to hand over.<br>
+            Deploying Rook takes <strong style="color:var(--amber);">exactly one line</strong> on your developer's machine or CI server.
+          </div>
+        </div>`; break;
+
+    case 'brew-progress':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.15s ease forwards';
+      el.innerHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);padding-left:2ch;">
+        <span id="brew-bar">█████████████████████░░░░</span> <span style="color:var(--fg-muted);">87%</span>
+      </div>`;
+      setTimeout(() => {
+        const bar = document.getElementById('brew-bar');
+        if (bar) { bar.textContent = '█████████████████████████'; bar.nextElementSibling && (bar.nextElementSibling.textContent = ' 100%'); }
+      }, 600); break;
+
+    case 'install-cards':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.25s ease forwards';
+      el.innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0;">
+          <div style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:4px;">macOS · Homebrew</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);">brew install lambdatest/rook/rook</div>
+          </div>
+          <div style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:4px;">Node · npm</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);">npm install -g @testmuai/rook</div>
+          </div>
+          <div style="flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fg-muted);margin-bottom:4px;">verify</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);">rook --version  → v0.1.17</div>
+          </div>
+        </div>`; break;
+
+    case 'scenarios-table':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.2s ease forwards';
+      el.innerHTML = `
+        <div style="margin:6px 0 2px;color:var(--fg-muted);font-size:11px">► generation outcome</div>
+        <table style="border-collapse:collapse;width:100%;max-width:400px;font-family:'JetBrains Mono',monospace;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:5px 24px 5px 0;color:var(--fg-muted);font-weight:500;">ID</th>
+              <th style="text-align:left;padding:5px 24px 5px 0;color:var(--fg-muted);font-weight:500;">OUTCOME</th>
+              <th style="text-align:left;padding:5px 0;color:var(--fg-muted);font-weight:500;">NOTE</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['SC-001','SC-002','SC-003','SC-004','SC-005','SC-006','SC-007','SC-008','SC-009','SC-010','SC-011','SC-012','SC-013','SC-014','SC-015','SC-016'].map(id => `
+            <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 40%,transparent);">
+              <td style="padding:4px 24px 4px 0;color:var(--cyan);">${id}</td>
+              <td style="padding:4px 24px 4px 0;"><span style="color:var(--green);">written</span></td>
+              <td style="padding:4px 0;color:var(--fg-muted);">—</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`; break;
+
+    case 'owasp-table':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.2s ease forwards';
+      el.innerHTML = `
+        <table style="border-collapse:collapse;width:100%;max-width:620px;font-family:'JetBrains Mono',monospace;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:5px 20px 5px 0;color:var(--fg-muted);font-weight:500;">RISK</th>
+              <th style="text-align:right;padding:5px 20px 5px 0;color:var(--fg-muted);font-weight:500;">GENERATED</th>
+              <th style="text-align:right;padding:5px 20px 5px 0;color:var(--fg-muted);font-weight:500;">EXECUTED</th>
+              <th style="text-align:right;padding:5px 20px 5px 0;color:var(--fg-muted);font-weight:500;">REACHED</th>
+              <th style="text-align:right;padding:5px 20px 5px 0;color:var(--fg-muted);font-weight:500;">PASS</th>
+              <th style="text-align:right;padding:5px 20px 5px 0;color:var(--fg-muted);font-weight:500;">FAIL</th>
+              <th style="text-align:right;padding:5px 0;color:var(--fg-muted);font-weight:500;">UNABLE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 40%,transparent);">
+              <td style="padding:5px 20px 5px 0;color:var(--fg);">redteam</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">5</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">3</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--green);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--red);font-weight:700;">5</td>
+              <td style="text-align:right;padding:5px 0;color:var(--fg);">0</td>
+            </tr>
+            <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 40%,transparent);">
+              <td style="padding:5px 20px 5px 0;color:var(--fg);">owasp:asi01</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">2</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">1</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--green);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--red);font-weight:700;">2</td>
+              <td style="text-align:right;padding:5px 0;color:var(--fg);">0</td>
+            </tr>
+            <tr style="border-bottom:1px solid color-mix(in srgb,var(--border) 40%,transparent);">
+              <td style="padding:5px 20px 5px 0;color:var(--fg);">owasp:asi02</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">1</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--fg);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--green);">0</td>
+              <td style="text-align:right;padding:5px 20px 5px 0;color:var(--red);font-weight:700;">1</td>
+              <td style="text-align:right;padding:5px 0;color:var(--fg);">0</td>
+            </tr>
+          </tbody>
+        </table>`; break;
+
+    case 'agents-table':
+      el.className = 'line';
+      el.style.opacity = '0';
+      el.style.animation = 'fadein 0.2s ease forwards';
+      el.innerHTML = `
+        <div style="margin:6px 0 2px;color:var(--fg-muted);font-size:11px">► agents analysed</div>
+        <table style="border-collapse:collapse;width:100%;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:5px 16px 5px 0;color:var(--fg-muted);font-weight:500;">AGENT</th>
+              <th style="text-align:right;padding:5px 16px 5px 0;color:var(--fg-muted);font-weight:500;">FEATURES</th>
+              <th style="text-align:right;padding:5px 16px 5px 0;color:var(--fg-muted);font-weight:500;">FINDINGS</th>
+              <th style="text-align:left;padding:5px 16px 5px 0;color:var(--fg-muted);font-weight:500;">WORST</th>
+              <th style="text-align:left;padding:5px 0;color:var(--fg-muted);font-weight:500;">NOTE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:6px 16px 6px 0;color:var(--cyan);">claimdesk-ai</td>
+              <td style="text-align:right;padding:6px 16px 6px 0;color:var(--fg);">7</td>
+              <td style="text-align:right;padding:6px 16px 6px 0;color:var(--fg);">11</td>
+              <td style="padding:6px 16px 6px 0;"><span style="color:var(--red);font-weight:700;">critical</span></td>
+              <td style="padding:6px 0;color:var(--fg-muted);">—</td>
+            </tr>
+          </tbody>
+        </table>`; break;
+
+    case 'table-row':
+      el.className = 'line l-table-row'; el.innerHTML = l.text; break;
+
+    case 'result':
+      el.className = 'line l-result'; el.innerHTML = l.text; break;
+
+    case 'timing':
+      el.className = 'line l-timing'; el.innerHTML = l.text; break;
+
+    case 'path':
+      el.className = 'line l-path'; el.textContent = l.text; break;
+
+    default:
+      el.className = 'line'; el.textContent = l.text || '';
+  }
+  return el;
+}
+
+function showEnterHint(body, cursorEl, resume) {
+  const hint = document.createElement('div');
+  hint.id = 'enter-hint';
+  hint.style.cssText = `
+    display:inline-flex;align-items:center;gap:8px;
+    margin:6px 0 2px;padding:5px 12px;
+    border:1px solid var(--amber-dim);border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--amber);background:color-mix(in srgb,var(--amber) 8%,transparent);
+    cursor:pointer;animation:fadein 0.2s ease forwards;
+  `;
+  hint.innerHTML = `<span style="font-size:14px;">↵</span> Press <kbd style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;">Enter</kbd> to run`;
+  hint.onclick = () => triggerGate();
+  body.insertBefore(hint, cursorEl);
+  body.scrollTop = body.scrollHeight;
+  gateResolve = resume;
+}
+
+function runStep(stepIdx) {
+  if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+  gateResolve = null;
+  // remove any stale hint
+  const oldHint = document.getElementById('enter-hint');
+  if (oldHint) oldHint.remove();
+
+  currentStep = stepIdx;
+  buildNav();
+  updateControls();
+
+  const body = document.getElementById('term-body');
+  body.innerHTML = '';
+
+  const step = STEPS[stepIdx];
+  let i = 0;
+
+  // Add cursor placeholder
+  const cursorEl = document.createElement('span');
+  cursorEl.className = 'cursor';
+  body.appendChild(cursorEl);
+
+  function addLine() {
+    if (i >= step.lines.length) {
+      cursorEl.remove();
+      return;
+    }
+    const l = step.lines[i++];
+
+    // Gate: pause and wait for Enter
+    if (l.t === 'gate') {
+      // wait until typing animation finishes (prompt-typing uses animTimer)
+      // then show the hint
+      const resume = () => { animTimer = setTimeout(addLine, 100); };
+      // slight delay so typing completes
+      animTimer = setTimeout(() => showEnterHint(body, cursorEl, resume), 350);
+      return;
+    }
+
+    const el = renderLine(l);
+    body.insertBefore(el, cursorEl);
+    body.scrollTop = body.scrollHeight;
+
+    // vary delay by line type
+    let delay = 60;
+    if (l.t === 'blank')          delay = 30;
+    if (l.t === 'ascii')          delay = 200;
+    if (l.t === 'workflow')       delay = 120;
+    if (l.t === 'target')         delay = 80;
+    if (l.t === 'prompt')         delay = 180;
+    if (l.t === 'prompt-typing')      delay = l.text.length * 38 + 150;
+    if (l.t === 'prompt-typing-tui') delay = l.text.length * 38 + 150;
+    if (l.t === 'question')       delay = 250;
+    if (l.t === 'answer')         delay = 300;
+    if (l.t === 'work')           delay = 120;
+    if (l.t === 'timing')         delay = 50;
+    if (l.t === 'result')         delay = 100;
+    if (l.t === 'table-row')      delay = 80;
+    if (l.t === 'install-intro')  delay = 200;
+
+    animTimer = setTimeout(addLine, delay);
+  }
+
+  // Small boot delay
+  animTimer = setTimeout(addLine, 300);
+}
+
+function goToStep(idx) {
+  runStep(idx);
+}
+
+function nextStep() {
+  if (currentStep < STEPS.length - 1) runStep(currentStep + 1);
+}
+
+function prevStep() {
+  if (currentStep > 0) runStep(currentStep - 1);
+}
+
+function restartStep() {
+  runStep(currentStep);
+}
+
+function updateControls() {
+  const total = STEPS.length;
+  document.getElementById('btn-prev').disabled = currentStep === 0;
+  document.getElementById('btn-next').disabled = currentStep === total - 1;
+  document.getElementById('btn-next').textContent = currentStep === total - 1 ? 'Done ✓' : 'Next ▶';
+  document.getElementById('step-indicator').textContent = `${currentStep + 1} / ${total}`;
+  document.getElementById('phase-label').textContent = `Step ${currentStep + 1} of ${total}`;
+  document.getElementById('progress-fill').style.width = `${((currentStep + 1) / total) * 100}%`;
+}
+
+// Boot
+runStep(0);
+</script>
+
+</body></html>
